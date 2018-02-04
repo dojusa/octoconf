@@ -6,7 +6,7 @@ defmodule Octoconf do
 
     # Define workers and child supervisors to be supervised
     children = [
-      supervisor(Octoconf.Poolers.Supervisor, []),
+      supervisor(Octoconf.Queues.Supervisor, []),
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html

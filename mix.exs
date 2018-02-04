@@ -14,6 +14,7 @@ defmodule Octoconf.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {Octoconf, []},
       extra_applications: [:logger]
     ]
   end
@@ -22,7 +23,9 @@ defmodule Octoconf.Mixfile do
   defp deps do
     [
       {:ex_aws, "~> 2.0"},
+      {:ex_aws_sqs, "~> 2.0"},
       {:httpoison, "~> 1.0"},
+      {:gen_stage, "~> 0.13.1"},
     ]
   end
 end
