@@ -1,18 +1,17 @@
 defmodule Octoconf do
-  @moduledoc """
-  Documentation for Octoconf.
-  """
+  use Application
 
-  @doc """
-  Hello world.
+  def start(_type, _args) do
+    import Supervisor.Spec
 
-  ## Examples
+    # Define workers and child supervisors to be supervised
+    children = [
+      supervisor(Octoconf.Poolers.Supervisor, []),
+    ]
 
-      iex> Octoconf.hello
-      :world
-
-  """
-  def hello do
-    :world
+    # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: Octoconf.Supervisor]
+    Supervisor.start_link(children, opts)
   end
 end
