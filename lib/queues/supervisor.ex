@@ -11,11 +11,11 @@ defmodule Octoconf.Queues.Supervisor do
   end
 
   defp children do
-    ["stock"]
+    ["stock", "price"]
     |> Enum.map(fn queue_name ->
       [
-        worker(Poller, [queue_name]),
-        worker(Consumer, [queue_name]),
+        worker(Poller, [queue_name], id: "#{Poller}_#{queue_name}"),
+        worker(Consumer, [queue_name], id: "#{Consumer}_#{queue_name}"),
       ]
     end)
     |> List.flatten

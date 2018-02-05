@@ -7,8 +7,7 @@ defmodule Octoconf.Queues.Consumer do
       worker(Octoconf.JobRunner, [], restart: :temporary)
     ]
     
-    ConsumerSupervisor.start_link(children, name: :"#{__MODULE__}_#{queue_name}",
-                                            strategy: :one_for_one,
+    ConsumerSupervisor.start_link(children, strategy: :one_for_one,
                                             subscribe_to: [:"#{Poller}_#{queue_name}"])
   end
 end
