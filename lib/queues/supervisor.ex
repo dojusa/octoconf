@@ -1,6 +1,7 @@
 defmodule Octoconf.Queues.Supervisor do
   use Supervisor
   alias Octoconf.Queues.{Poller, Consumer}
+  alias Octoconf.Handlers
 
   def start_link() do
     Supervisor.start_link(__MODULE__, [], name: __MODULE__)
@@ -15,7 +16,7 @@ defmodule Octoconf.Queues.Supervisor do
     |> Enum.map(fn queue_name ->
       [
         worker(Poller, [queue_name], id: "#{Poller}_#{queue_name}"),
-        worker(Consumer, [queue_name], id: "#{Consumer}_#{queue_name}"),
+        worker(Consumer, [Handlers.ProductMessage, queue_name], id: "#{Consumer}_#{queue_name}"),
       ]
     end)
     |> List.flatten
