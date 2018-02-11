@@ -1,5 +1,6 @@
 defmodule Octoconf.Queues.Poller do
   use GenStage
+  require Logger
   alias Octoconf.SQS
   
   def start_link(queue) do
@@ -11,6 +12,7 @@ defmodule Octoconf.Queues.Poller do
   end
 
   def handle_demand(demand, state) do
+    Logger.debug "asked for #{demand} messages"
     GenStage.cast(via_tuple(state.queue), :check_for_messages)
     {:noreply, [], %{state | pending_demand: demand + state.pending_demand}}
   end
@@ -24,10 +26,16 @@ defmodule Octoconf.Queues.Poller do
     dispatch_events(events, state)
   end
 
+  def dispatch_events(events, %{pending_demand: demand} = state) when demand == 0 or events == [] do
+    GenStage.cast(via_tuple(state.queue), :check_for_messages)
+    {:noreply, [], state}
+  end
+
   def dispatch_events(events, state) do
     {to_dispatch, remaining} = Enum.split(events, state.pending_demand)
     state = %{state | events: remaining, pending_demand: state.pending_demand - length(to_dispatch)}
     GenStage.cast(via_tuple(state.queue), :check_for_messages)
+    Logger.debug "dispatched messages #{inspect(to_dispatch)}"
     {:noreply, to_dispatch, state}
   end
 
