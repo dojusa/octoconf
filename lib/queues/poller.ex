@@ -1,26 +1,41 @@
 defmodule Octoconf.Queues.Poller do
   use GenStage
-
-  def start_link(queue_name) do
-    GenStage.start_link(__MODULE__, queue_name, name: :"#{__MODULE__}_#{queue_name}")
+  alias Octoconf.SQS
+  
+  def start_link(queue) do
+    GenStage.start_link(__MODULE__, queue, name: via_tuple(queue))
   end
 
-  def init(queue_name) do
-    {:producer, queue_name}
+  def init(queue) do
+    {:producer, %{queue: queue, events: [], pending_demand: 0}}
   end
 
-  def handle_cast(:check_for_messages, queue_name) do
-    messages = Octoconf.SQS.get_messages!(queue_name)
-    GenStage.cast(__MODULE__, :check_for_messages)
-    {:noreply, [messages], queue_name}
+  def handle_demand(demand, state) do
+    GenStage.cast(via_tuple(state.queue), :check_for_messages)
+    {:noreply, [], %{state | pending_demand: demand + state.pending_demand}}
   end
 
-  def handle_demand(demand, _state) do
-    GenStage.cast(__MODULE__, :check_for_messages)
-    {:noreply, [], demand}
+  def handle_cast(:check_for_messages, %{pending_demand: demand, events: events} = state) when demand <= length(events) do
+    dispatch_events(events, state)
+  end
+
+  def handle_cast(:check_for_messages, state) do
+    events = state.events ++ SQS.get_messages!(state.queue)
+    dispatch_events(events, state)
+  end
+
+  def dispatch_events(events, state) do
+    {to_dispatch, remaining} = Enum.split(events, state.pending_demand)
+    state = %{state | events: remaining, pending_demand: state.pending_demand - length(to_dispatch)}
+    GenStage.cast(via_tuple(state.queue), :check_for_messages)
+    {:noreply, to_dispatch, state}
   end
 
   def handle_info(_msg, state) do
     {:noreply, [], state}
   end
-end
+
+  def via_tuple(queue) do
+    Octoconf.Registry.via_tuple({__MODULE__, queue})
+  end
+end 

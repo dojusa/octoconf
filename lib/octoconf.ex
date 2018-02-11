@@ -6,6 +6,7 @@ defmodule Octoconf do
 
     # Define workers and child supervisors to be supervised
     children = [
+      supervisor(Registry, [:unique, Octoconf.Registry]),
       supervisor(Octoconf.Queues.Supervisor, []),
     ]
 
