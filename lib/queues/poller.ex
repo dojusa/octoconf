@@ -22,7 +22,7 @@ defmodule Octoconf.Queues.Poller do
   end
 
   def handle_cast(:check_for_messages, state) do
-    events = state.events ++ SQS.get_messages!(state.queue)
+    events = state.events ++ SQS.receive_message!(state.queue)
     dispatch_events(events, state)
   end
 
