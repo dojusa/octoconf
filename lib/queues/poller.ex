@@ -12,25 +12,20 @@ defmodule Octoconf.Queues.Poller do
   end
 
   def poll(queue) do
-    queue
-    |> via_tuple
+    via_tuple(queue)
     |> GenStage.cast(:poll)
   end
 
   def handle_demand(demand, state) do
     Logger.debug "asked for #{demand} messages"
-    poll(state.queue)
-    state = %{state | pending_demand: demand + state.pending_demand}
-    {:noreply, [], state}
+    dispatch_events(%{state | pending_demand: state.pending_demand + demand})
   end
 
   def handle_cast(:poll, %{pending_demand: 0} = state) do
-    poll(state.queue)
     {:noreply, [], state}
   end
 
   def handle_cast(:poll, state) do
-    poll(state.queue)
     events = 
       SQS.receive_message!(state.queue)
       |> Enum.reduce(state.events, fn msg, acc -> 
@@ -58,8 +53,11 @@ defmodule Octoconf.Queues.Poller do
   end
 
   defp do_dispatch_events(state, to_dispatch) do
-    Logger.debug "dispatched messages #{inspect(to_dispatch)}"
-    {:noreply, Enum.reverse(to_dispatch), state}
+    poll(state.queue)
+    to_dispatch = Enum.reverse(to_dispatch)
+    
+    Logger.debug "queue.size: #{inspect(state.events)} // dispatched messages #{inspect(to_dispatch)}"
+    {:noreply, to_dispatch, state}
   end
 
   # This will prevent unexpected crashes when somebody
