@@ -24,6 +24,7 @@ defmodule Octoconf.Mixfile do
     [
       {:ex_aws, "~> 2.0"},
       {:ex_aws_sqs, "~> 2.0"},
+      {:sweet_xml, "~> 0.6.5"},
       {:httpoison, "~> 1.0"},
       {:gen_stage, "~> 0.13.1"},
     ]

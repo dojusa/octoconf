@@ -1,14 +1,13 @@
 defmodule Octoconf.Queues.Poller do
   use GenStage
   require Logger
-  alias Octoconf.SQS
   
   def start_link(queue) do
-    GenStage.start_link(__MODULE__, queue, name: via_tuple(queue))
+    GenStage.start_link(__MODULE__, queue, name: via_tuple(queue[:name]))
   end
 
   def init(queue) do
-    {:producer, %{queue: queue, events: :queue.new, pending_demand: 0}}
+    {:producer, %{adapter: queue[:adapter], queue: queue[:name], events: :queue.new, pending_demand: 0}}
   end
 
   def poll(queue) do
@@ -27,7 +26,7 @@ defmodule Octoconf.Queues.Poller do
 
   def handle_cast(:poll, state) do
     events = 
-      SQS.receive_message!(state.queue)
+      state.adapter.receive_message(state.queue, max_number_of_messages: 10)
       |> Enum.reduce(state.events, fn msg, acc -> 
         :queue.in(msg, acc)
       end)
@@ -56,7 +55,7 @@ defmodule Octoconf.Queues.Poller do
     poll(state.queue)
     to_dispatch = Enum.reverse(to_dispatch)
     
-    Logger.debug "queue.size: #{inspect(state.events)} // dispatched messages #{inspect(to_dispatch)}"
+    Logger.debug "queue_size: #{inspect(:queue.len state.events)} // dispatched messages #{inspect(to_dispatch)}"
     {:noreply, to_dispatch, state}
   end
 
