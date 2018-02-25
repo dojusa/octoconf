@@ -21,6 +21,7 @@ defmodule Octoconf.Queues.Poller do
   end
 
   def handle_cast(:poll, %{pending_demand: 0} = state) do
+    Logger.debug "empty poll"
     {:noreply, [], state}
   end
 
@@ -28,6 +29,7 @@ defmodule Octoconf.Queues.Poller do
     events = 
       state.adapter.receive_message(state.queue, max_number_of_messages: 10)
       |> Enum.reduce(state.events, fn msg, acc -> 
+        msg = Map.put(msg, :queue, state.queue)
         :queue.in(msg, acc)
       end)
     dispatch_events(%{state | events: events})

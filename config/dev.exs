@@ -5,12 +5,12 @@ config :octoconf,
   queues: [
     %{
       name: "stock",
-      handler: Simple.Handlers.Product,
+      handler: Octoconf.Handlers.Product,
       concurrency: 100
     },
     %{
       name: "invoice",
-      handler: Simple.Handlers.Order,
+      handler: Octoconf.Handlers.Product,
       concurrency: 100
     },
   ]

@@ -6,9 +6,6 @@ defmodule Octoconf.Handlers.Order do
   end
 
   def handle(message) do
-    :rand.uniform(5)
-    |> :timer.seconds
-    |> :timer.sleep
     Octoconf.Adapters.SQS.delete_message(message.queue, message)
     Logger.debug "#{__MODULE__} handled message #{inspect(message)}"
   end
