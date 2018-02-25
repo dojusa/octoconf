@@ -2,12 +2,14 @@ defmodule Octoconf.Queues.Poller do
   use GenStage
   require Logger
   
+  @adapter Application.get_env(:octoconf, :adapter)
+
   def start_link(queue) do
     GenStage.start_link(__MODULE__, queue, name: via_tuple(queue[:name]))
   end
 
   def init(queue) do
-    {:producer, %{adapter: queue[:adapter], queue: queue[:name], events: :queue.new, pending_demand: 0}}
+    {:producer, %{queue: queue[:name], events: :queue.new, pending_demand: 0}}
   end
 
   def poll(queue) do
@@ -17,6 +19,7 @@ defmodule Octoconf.Queues.Poller do
 
   def handle_demand(demand, state) do
     Logger.debug "asked for #{demand} messages"
+    poll(state.queue)
     dispatch_events(%{state | pending_demand: state.pending_demand + demand})
   end
 
@@ -26,8 +29,9 @@ defmodule Octoconf.Queues.Poller do
   end
 
   def handle_cast(:poll, state) do
+    poll(state.queue)
     events = 
-      state.adapter.receive_message(state.queue, max_number_of_messages: 10)
+      @adapter.receive_message(state.queue, max_number_of_messages: 10)
       |> Enum.reduce(state.events, fn msg, acc -> 
         msg = Map.put(msg, :queue, state.queue)
         :queue.in(msg, acc)
@@ -54,9 +58,7 @@ defmodule Octoconf.Queues.Poller do
   end
 
   defp do_dispatch_events(state, to_dispatch) do
-    poll(state.queue)
     to_dispatch = Enum.reverse(to_dispatch)
-    
     Logger.debug "queue_size: #{inspect(:queue.len state.events)} // dispatched messages #{inspect(to_dispatch)}"
     {:noreply, to_dispatch, state}
   end

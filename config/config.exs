@@ -2,6 +2,20 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
+config :octoconf,
+  queues: [
+    %{
+      name: "stock",
+      handler: Octoconf.Handlers.Product,
+      concurrency: 1_000
+    },
+    %{
+      name: "invoice",
+      handler: Octoconf.Handlers.Product,
+      concurrency: 1_000
+    },
+  ]
+
 config :ex_aws,
   debug_requests: false,
   access_key_id: System.get_env("AWS_ACCESS_KEY_ID") ,

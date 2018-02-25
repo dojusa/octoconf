@@ -11,11 +11,10 @@ defmodule Octoconf.Queues.Supervisor do
   end
 
   defp children do
-    adapter = Application.get_env(:octoconf, :adapter)
     Application.get_env(:octoconf, :queues)
     |> Enum.flat_map(fn queue ->
       [
-        worker(Poller, [[name: queue[:name], adapter: adapter]], id: "#{Poller}_#{queue[:name]}"),
+        worker(Poller, [[name: queue[:name]]], id: "#{Poller}_#{queue[:name]}"),
         worker(Consumer, [queue], id: "#{Consumer}_#{queue[:name]}"),
       ]
     end)
