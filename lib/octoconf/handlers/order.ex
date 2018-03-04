@@ -8,6 +8,7 @@ defmodule Octoconf.Handlers.Order do
   end
 
   def handle(message) do
+    :timer.sleep(:timer.seconds(4))
     @adapter.delete_message(message.queue, message)
     Logger.debug "#{__MODULE__} handled message #{inspect(message)}"
   end

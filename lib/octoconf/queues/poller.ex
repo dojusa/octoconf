@@ -12,9 +12,8 @@ defmodule Octoconf.Queues.Poller do
     {:producer, %{queue: queue[:name], events: :queue.new, pending_demand: 0}}
   end
 
-  def poll(queue) do
-    via_tuple(queue)
-    |> GenStage.cast(:poll)
+  def poll do
+    GenStage.cast(self(), :poll)
   end
 
   def handle_demand(demand, state) do
@@ -56,9 +55,9 @@ defmodule Octoconf.Queues.Poller do
   end
 
   defp do_dispatch_events(state, to_dispatch) do
-    if state.pending_demand > 0, do: poll(state.queue)
+    if state.pending_demand > 0, do: poll()
     to_dispatch = Enum.reverse(to_dispatch)
-    Logger.debug "queue_size: #{inspect(:queue.len state.events)} // dispatched messages #{inspect(to_dispatch)}"
+    Logger.debug "queue_size: #{inspect(:queue.len state.events)} // dispatched #{length(to_dispatch)} messages"
     {:noreply, to_dispatch, state}
   end
 

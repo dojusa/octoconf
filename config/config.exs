@@ -7,12 +7,12 @@ config :octoconf,
     %{
       name: "stock",
       handler: Octoconf.Handlers.Product,
-      concurrency: 1_000
+      concurrency: 10
     },
     %{
       name: "invoice",
-      handler: Octoconf.Handlers.Product,
-      concurrency: 1_000
+      handler: Octoconf.Handlers.Order,
+      concurrency: 20
     },
   ]
 
