@@ -6,7 +6,7 @@ defmodule Octoconf.Adapters.Dummy do
     Enum.to_list(1..size)
     |> Enum.map(fn _ ->
       body = %{
-        account: :rand.uniform(10),
+        account: :rand.uniform(5_000),
         value: UUID.uuid4()
       }
       %{

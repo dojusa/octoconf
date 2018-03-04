@@ -35,6 +35,7 @@ defmodule Octoconf.Dispatchers.Partner do
   def handle_info(:dispatch_events, state) do
     state = dispatch_events(state)
     if state.empty_dispatch >= @empty_dispatch_limit do
+      Logger.debug "#{inspect {__MODULE__, state.account, state.queue}} SHUTTING DOWN due to empty dispatchs"
       {:stop, :normal, state}
     else
       Process.send_after(self(), :dispatch_events, @dispatch_timeout)
