@@ -22,7 +22,6 @@ defmodule Octoconf.Queues.Poller do
   end
 
   def handle_cast(:poll, %{pending_demand: 0} = state) do
-    Logger.debug "empty poll"
     {:noreply, [], state}
   end
 
@@ -57,7 +56,6 @@ defmodule Octoconf.Queues.Poller do
   defp do_dispatch_events(state, to_dispatch) do
     if state.pending_demand > 0, do: poll()
     to_dispatch = Enum.reverse(to_dispatch)
-    Logger.debug "queue_size: #{inspect(:queue.len state.events)} // dispatched #{length(to_dispatch)} messages"
     {:noreply, to_dispatch, state}
   end
 

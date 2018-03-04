@@ -9,6 +9,6 @@ defmodule Octoconf.Handlers.Order do
     :timer.sleep(:timer.seconds(4))
     #do some computation here
     Octoconf.Dispatchers.Partner.add_message(message)
-    Logger.debug "#{__MODULE__} handled message #{inspect(message)}"
+    Logger.debug "#{__MODULE__} handled message #{inspect(message.message_id)}"
   end
 end

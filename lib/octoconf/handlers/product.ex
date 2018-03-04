@@ -9,7 +9,7 @@ defmodule Octoconf.Handlers.Product do
 
   def handle(message) do
     :timer.sleep(:timer.seconds(4))
-    @adapter.delete_message(message.queue, message)
-    Logger.debug "#{__MODULE__} handled message #{inspect(message)}"
+    Octoconf.Dispatchers.Partner.add_message(message)
+    Logger.debug "#{__MODULE__} handled message #{inspect(message.message_id)}"
   end
 end

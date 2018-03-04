@@ -4,7 +4,7 @@ defmodule Octoconf.Adapters.Dummy do
 
     size = :rand.uniform(10)
     Enum.to_list(1..size)
-    |> Enum.map(fn n ->
+    |> Enum.map(fn _ ->
       body = %{
         account: :rand.uniform(10),
         value: UUID.uuid4()

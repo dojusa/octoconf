@@ -2,26 +2,28 @@ defmodule Octoconf.Dispatchers.Partner do
   require Logger
 
   @adapter Application.get_env(:octoconf, :adapter)
-  @dispatch_timeout 10_000 #milliseconds
-  @dispatch_size 10
+  @dispatch_timeout Application.get_env(:octoconf, __MODULE__)[:dispatch_timeout]
+  @dispatch_size Application.get_env(:octoconf, __MODULE__)[:dispatch_size]
+  @empty_dispatch_limit Application.get_env(:octoconf, __MODULE__)[:empty_dispatch_limit]
 
-  def start(args) do
-    key = {__MODULE__, args[:account]}
-    name = Octoconf.Registry.via_global_tuple(key)
-    GenServer.start(__MODULE__, args, name: name)
+  def start(message) do
+    name = 
+      process_name(message)
+      |> Octoconf.Registry.via_global_tuple
+    GenServer.start(__MODULE__, message, name: name)
   end
 
-  def init(args) do
+  def init(message) do
     send(self(), :dispatch_events)
-    {:ok, %{account: args[:account], events: :queue.new}}
+    {:ok, %{account: message.body[:account], queue: message[:queue], events: :queue.new, empty_dispatch: 0}}
   end
 
   def add_message(message) do
-    key = {__MODULE__, message.body[:account]}
-    unless Octoconf.Registry.exists_globally?(key) do
-      __MODULE__.start(account: message.body[:account])
+    name = process_name(message)
+    unless Octoconf.Registry.exists_globally?(name) do
+      __MODULE__.start(message)
     end
-    Octoconf.Registry.via_global_tuple(key)
+    Octoconf.Registry.via_global_tuple(name)
     |> GenServer.cast({:add_message, message})
   end
 
@@ -32,8 +34,12 @@ defmodule Octoconf.Dispatchers.Partner do
 
   def handle_info(:dispatch_events, state) do
     state = dispatch_events(state)
-    Process.send_after(self(), :dispatch_events, @dispatch_timeout)
-    {:noreply, state}
+    if state.empty_dispatch >= @empty_dispatch_limit do
+      {:stop, :normal, state}
+    else
+      Process.send_after(self(), :dispatch_events, @dispatch_timeout)
+      {:noreply, state}  
+    end
   end
 
   # This will prevent unexpected crashes when somebody
@@ -61,15 +67,16 @@ defmodule Octoconf.Dispatchers.Partner do
   end
 
   def do_dispatch_events(state, []) do
-    Logger.debug "#{__MODULE__} dispatched []"
-    state
+    %{state | empty_dispatch: state.empty_dispatch + 1}
   end
 
   def do_dispatch_events(state, to_dispatch) do
     to_dispatch = Enum.reverse(to_dispatch)
-    Logger.debug "#{__MODULE__} dispatched #{inspect length(to_dispatch)} messages"
-    # do some real dispatch here
-    @adapter.delete_message_batch(List.first(to_dispatch).queue, to_dispatch)
-    dispatch_events(state)
+    Logger.debug "#{inspect {__MODULE__, state.account, state.queue}} dispatched #{inspect length(to_dispatch)} messages"
+    @adapter.delete_message_batch(state.queue, to_dispatch)
+    dispatch_events(%{state | empty_dispatch: 0})
   end
+
+  defp process_name(message), 
+    do: {__MODULE__, message.body[:account], message[:queue]}
 end

@@ -4,10 +4,10 @@ defmodule Octoconf.Registry do
   end
 
   def exists_globally?(key) do
-    Swarm.whereis_name(key) != :undefined
+    :global.whereis_name(key) != :undefined
   end
 
   def via_global_tuple(key) do
-    {:via, :swarm, key}
+    {:global, key}
   end
 end
