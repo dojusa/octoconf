@@ -5,9 +5,13 @@ defmodule Octoconf.Adapters.Dummy do
     size = :rand.uniform(10)
     Enum.to_list(1..size)
     |> Enum.map(fn n ->
+      body = %{
+        account: :rand.uniform(10),
+        value: UUID.uuid4()
+      }
       %{
         attributes: [], 
-        body: "{}", 
+        body: body, 
         md5_of_body: "c4ca4238a0b923820dcc509a6f75849b",
         message_attributes: [], 
         message_id: UUID.uuid4(),
@@ -17,6 +21,10 @@ defmodule Octoconf.Adapters.Dummy do
   end
 
   def delete_message(_queue, _message) do
+    :ok
+  end
+
+  def delete_message_batch(_queue, _messages) do
     :ok
   end
 end

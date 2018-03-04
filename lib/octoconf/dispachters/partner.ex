@@ -1,17 +1,33 @@
 defmodule Octoconf.Dispatchers.Partner do
   require Logger
 
-  @dispatch_timeout 500 #milliseconds
+  @adapter Application.get_env(:octoconf, :adapter)
+  @dispatch_timeout 10_000 #milliseconds
   @dispatch_size 10
 
   def start(args) do
-    name = Octoconf.Registry.via_global_tuple({args[:account], args[:type]})
+    key = {__MODULE__, args[:account]}
+    name = Octoconf.Registry.via_global_tuple(key)
     GenServer.start(__MODULE__, args, name: name)
   end
 
   def init(args) do
     send(self(), :dispatch_events)
     {:ok, %{account: args[:account], events: :queue.new}}
+  end
+
+  def add_message(message) do
+    key = {__MODULE__, message.body[:account]}
+    unless Octoconf.Registry.exists_globally?(key) do
+      __MODULE__.start(account: message.body[:account])
+    end
+    Octoconf.Registry.via_global_tuple(key)
+    |> GenServer.cast({:add_message, message})
+  end
+
+  def handle_cast({:add_message, message}, state) do
+    state = %{state | events: :queue.in(message, state.events)}
+    {:noreply, state}
   end
 
   def handle_info(:dispatch_events, state) do
@@ -51,8 +67,9 @@ defmodule Octoconf.Dispatchers.Partner do
 
   def do_dispatch_events(state, to_dispatch) do
     to_dispatch = Enum.reverse(to_dispatch)
-    Logger.debug "#{__MODULE__} dispatched #{inspect to_dispatch}"
+    Logger.debug "#{__MODULE__} dispatched #{inspect length(to_dispatch)} messages"
     # do some real dispatch here
+    @adapter.delete_message_batch(List.first(to_dispatch).queue, to_dispatch)
     dispatch_events(state)
   end
 end
