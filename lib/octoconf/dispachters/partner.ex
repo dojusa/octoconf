@@ -25,15 +25,18 @@ defmodule Octoconf.Dispatchers.Partner do
   end
 
   def handle_call({:swarm, :begin_handoff}, _from, state) do
+    Logger.info ":begin_handoff, #{inspect state.events}"
     {:reply, {:resume, state.events}, state}
   end
 
   def handle_cast({:swarm, :end_handoff, remote_events}, state) do
+    Logger.info ":end_handoff, #{inspect remote_events}"
     state = %{state | events: :queue.join(state.events, remote_events)}
     {:noreply, state}
   end
 
   def handle_cast({:swarm, :resolve_conflict, remote_events}, state) do
+    Logger.info ":resolve_conflict, #{inspect remote_events}"
     state = %{state | events: :queue.join(state.events, remote_events)}
     {:noreply, state}
   end
@@ -52,6 +55,11 @@ defmodule Octoconf.Dispatchers.Partner do
       Process.send_after(self(), :dispatch_events, @dispatch_timeout)
       {:noreply, state}  
     end
+  end
+
+  def handle_info({:swarm, :die}, state) do
+    Logger.info "BYE BYE i'm shutting down"
+    {:stop, :shutdown, state}
   end
 
   # This will prevent unexpected crashes when somebody
