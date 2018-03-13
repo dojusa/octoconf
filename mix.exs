@@ -29,6 +29,7 @@ defmodule Octoconf.Mixfile do
       {:poison, "~> 3.1"},
       {:gen_stage, "~> 0.13.1"},
       {:uuid, "~> 1.1"},
+      {:swarm, "~> 3.3"},
     ]
   end
 end

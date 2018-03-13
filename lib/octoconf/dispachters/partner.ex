@@ -7,10 +7,7 @@ defmodule Octoconf.Dispatchers.Partner do
   @empty_dispatch_limit Application.get_env(:octoconf, __MODULE__)[:empty_dispatch_limit]
 
   def start(message) do
-    name = 
-      process_name(message)
-      |> Octoconf.Registry.via_global_tuple
-    GenServer.start(__MODULE__, message, name: name)
+    GenServer.start(__MODULE__, message)
   end
 
   def init(message) do
@@ -21,10 +18,24 @@ defmodule Octoconf.Dispatchers.Partner do
   def add_message(message) do
     name = process_name(message)
     unless Octoconf.Registry.exists_globally?(name) do
-      __MODULE__.start(message)
+      Swarm.register_name(name, __MODULE__, :start, [message])
     end
     Octoconf.Registry.via_global_tuple(name)
     |> GenServer.cast({:add_message, message})
+  end
+
+  def handle_call({:swarm, :begin_handoff}, _from, state) do
+    {:reply, {:resume, state.events}, state}
+  end
+
+  def handle_cast({:swarm, :end_handoff, remote_events}, state) do
+    state = %{state | events: :queue.join(state.events, remote_events)}
+    {:noreply, state}
+  end
+
+  def handle_cast({:swarm, :resolve_conflict, remote_events}, state) do
+    state = %{state | events: :queue.join(state.events, remote_events)}
+    {:noreply, state}
   end
 
   def handle_cast({:add_message, message}, state) do
