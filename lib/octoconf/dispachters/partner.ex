@@ -1,13 +1,16 @@
 defmodule Octoconf.Dispatchers.Partner do
+  use GenServer, restart: :temporary
   require Logger
+
+  alias Octoconf.Dispatchers
 
   @adapter Application.get_env(:octoconf, :adapter)
   @dispatch_timeout Application.get_env(:octoconf, __MODULE__)[:dispatch_timeout]
   @dispatch_size Application.get_env(:octoconf, __MODULE__)[:dispatch_size]
   @empty_dispatch_limit Application.get_env(:octoconf, __MODULE__)[:empty_dispatch_limit]
 
-  def start(message) do
-    GenServer.start(__MODULE__, message)
+  def start_link(message) do
+    GenServer.start_link(__MODULE__, message)
   end
 
   def init(message) do
@@ -18,7 +21,7 @@ defmodule Octoconf.Dispatchers.Partner do
   def add_message(message) do
     name = process_name(message)
     unless Octoconf.Registry.exists_globally?(name) do
-      Swarm.register_name(name, __MODULE__, :start, [message])
+      Dispatchers.Supervisor.add_dispatcher(__MODULE__, name, message)
     end
     Octoconf.Registry.via_global_tuple(name)
     |> GenServer.cast({:add_message, message})
